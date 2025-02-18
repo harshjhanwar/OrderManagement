@@ -1,0 +1,9 @@
+# ASP.NET Core-related ignores
+bin/
+obj/
+*.db
+*.pfx
+secrets.json
+logs/
+.env
+node_modules/

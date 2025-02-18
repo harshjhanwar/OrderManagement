@@ -1,0 +1,167 @@
+﻿@{
+    ViewData["Title"] = "Order Management";
+    Layout = "_Layout";
+}
+
+<div id="gridContainer">
+
+</div>
+<script type="text/javascript">
+    $(function () {
+        $("#gridContainer").dxDataGrid({
+            dataSource: {
+                load: function () {
+                    return $.ajax({
+                        url: "/api/Orders",
+                        dataType: "json"
+                    }).then(function (response) {
+                        if (!response.success) {
+                            console.log(response.message);
+                            alert(response.message);
+                            return;
+                        }
+                        return response.data;
+                    }).fail(function (jqXHR) {
+                        console.log("Error occurred in load operation");
+                    });
+                },
+                insert: function (values) {
+                    return $.ajax({
+                        url: "/api/Orders",
+                        method: "POST",
+                        contentType: "application/json",
+                        data: JSON.stringify(values)
+                    }).then(function (response) {
+                        if (!response.success) {
+                            console.log(response.message);
+                            alert(response.message);
+                            return;
+                        }
+                        return response.data;
+                    }).fail(function (jqXHR) {
+                        console.log("Error occurred in insert operation");
+                    });
+                },
+                update: function (key, values) {
+                    var updatedData = $.extend({ id: key.id }, values);
+                    return $.ajax({
+                        url: "/api/Orders/" + key.id,
+                        method: "PUT",
+                        contentType: "application/json",
+                        data: JSON.stringify(updatedData)
+                    }).then(function (response) {
+                        if (!response.success) {
+                            console.log(response.message);
+                            alert(response.message);
+                            return;
+                        }
+                        return response.data;
+                    }).fail(function (jqXHR) {
+                        console.log("Error occurred in update operation");
+                    });
+                },
+                remove: function (key) {
+                    console.log(key.id);
+                    return $.ajax({
+                        url: "/api/Orders/" + key.id,
+                        method: "DELETE"
+                    }).then(function (response) {
+                        if (!response.success) {
+                            console.log(response.message);
+                            alert(response.message);
+                            return;
+                        }
+                    }).fail(function (jqXHR) {
+                        console.log("Error occurred in delete operation");
+                    });
+                }
+            },
+            columns: [
+                { 
+                    dataField: "orderDeliveryStatus",
+                    caption: "Delivery Status",
+                    lookup: {
+                        dataSource: [
+                            { value: 0, text: "Delivered" },
+                            { value: 1, text: "Not Delivered" },
+                            { value: 2, text: "Returned" }
+                        ],
+                        valueExpr: "value",
+                        displayExpr: "text"
+                    },
+                    cellTemplate: function (container, options) {
+                        var icon = "";
+                        var text = "";
+
+                        switch (options.value) {
+                            case 0: icon = '<i class="fa-solid fa-check"></i>'; break;
+                            case 1: icon = '<i class="fa-solid fa-xmark"></i>'; break;
+                            case 2: icon = '<i class="fa-solid fa-rotate-left"></i>'; break;
+                        }
+
+                        var content = $("<div>").css({ "text-align": "center", "width": "100%" }).html(icon);
+                        container.append(content);
+                    }
+                },
+                {
+                    dataField: "orderStatus",
+                    caption: "Order Status",
+                    lookup: {
+                        dataSource: [
+                            { value: 0, text: "Shipped" },
+                            { value: 1, text: "In transit" },
+                            { value: 2, text: "Reached" },
+                        ],
+                        valueExpr: "value",
+                        displayExpr: "text"
+                    },
+                    cellTemplate: function (container, options) {
+                        var icon = "";
+                        var text = "";
+
+                        switch (options.value) {
+                            case 0: icon = '<i class="fa-solid fa-truck"></i>'; break;
+                            case 1: icon = '<i class="fa-regular fa-clock"></i>'; break;
+                            case 2: icon = '<i class="fa-solid fa-cube"></i>'; break;
+                        }
+
+                        var content = $("<div>").css({ "text-align": "center", "width": "100%" }).html(icon);
+                        container.append(content);
+                    }
+                },
+                { dataField: "invoice", caption: "Invoice", dataType: "string"},
+                { dataField: "orderDate", caption: "Order date", dataType: "date", format: "yyyy-MM-dd"},
+                { dataField: "shippedDate", caption: "Shipped date", dataType: "date", format: "yyyy-MM-dd"},
+                { dataField: "company", caption: "Company name" },
+                { dataField: "store", caption: "Store" },
+                { dataField: "orderTotal", caption: "Order total", dataType: "number", format: "$#,##0.00" },
+                { dataField: "paymentTotal", caption: "Payment total", dataType: "number", format: "$#,##0.00" }
+            ],
+            onRowUpdating: function(e) {
+              e.newData = $.extend({}, e.oldData, e.newData); // Merge original and updated data
+            },
+            editing: {
+                mode: "popup",
+                allowAdding: true,
+                allowUpdating: true,
+                allowDeleting: true,
+                popup: {
+                    title: "Order Details",
+                    showTitle: true,
+                    width: 700,
+                    height: 525
+                }
+            },
+            paging: { pageSize: 10 },
+            searchPanel: { visible: true },
+            groupPanel: { visible: true },
+            sorting: { mode: "multiple" },
+            allowColumnResizing: true,
+            showBorders: true
+        });
+    });
+</script>
+
+@section Scripts {
+    <script src="https://cdn3.devexpress.com/jslib/22.1.3/js/dx.all.js"></script>
+}
