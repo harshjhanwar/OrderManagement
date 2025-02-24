@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using OrderManagement.Models;
-using OrderManagement.Repositories;
+using OrderManagement.OrderManagement.Business;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -12,11 +12,11 @@ namespace OrderManagement.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class OrdersController(IOrderRepository repository, ILogger<OrdersController> logger, AppDbContext context) : ControllerBase
+    public class OrdersController(IOrderRepository repository, ILogger<OrdersController> logger) : ControllerBase
     {
         private readonly IOrderRepository _repository = repository;
         private readonly ILogger<OrdersController> _logger = logger;
-        private readonly AppDbContext _context = context;
+        //private readonly AppDbContext _context = context;
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Orders>>> GetOrders()
@@ -43,40 +43,41 @@ namespace OrderManagement.Controllers
 
             try
             {
-                var orderByInvoice = await _context.Orders.FirstOrDefaultAsync(x => x.Invoice == order.Invoice);
-                if(orderByInvoice != null)
-                {
-                    return Ok(new { success = false, message = $"Order with invoice {order.Invoice} is already created." });
-                }
-                await _repository.AddAsync(order);
-                return CreatedAtAction(nameof(GetOrders), new { id = order.Id }, new { success = true, data = order });
+                Result result = await _repository.AddAsync(order);
+                if (result.Success)
+                    return Ok(new { success = true });
+
+                return Ok(new { success = false, message = result.Message });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error creating order");
+                _logger.LogError(ex, "Error in creating or updating the order");
                 return StatusCode(500, new { success = false, message = "Internal server error" });
             }
         }
 
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, [FromBody] Orders order)
-        {
-            if (!ModelState.IsValid || id != order.Id)
-            {
-                return BadRequest(new { success = false, message = "Invalid data" });
-            }
+        //[HttpPut("{id}")]
+        //public async Task<IActionResult> Update(int id, [FromBody] Orders order)
+        //{
+        //    if (!ModelState.IsValid || id != order.Id)
+        //    {
+        //        return BadRequest(new { success = false, message = "Invalid data" });
+        //    }
 
-            try
-            {
-                await _repository.UpdateAsync(order);
-                return Ok(new { success = true, data = order });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error updating order with ID {Id}", id);
-                return StatusCode(500, new { success = false, message = "Internal server error" });
-            }
-        }
+        //    try
+        //    {
+        //        Result result = await _repository.AddAsync(order);
+        //        if (result.Success)
+        //            return Ok(new { success = true });
+
+        //        return Ok(new { success = false, message = result.Message });
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex, "Error updating order with ID {Id}", id);
+        //        return StatusCode(500, new { success = false, message = "Internal server error" });
+        //    }
+        //}
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
@@ -89,9 +90,11 @@ namespace OrderManagement.Controllers
                     return NotFound(new { success = false, message = "Order not found" });
                 }
 
-                bool val = await _repository.DeleteAsync(id);
-                return val ? Ok(new { success = true, message = "Order deleted successfully" })
-                           : StatusCode(500, new { success = false, message = "Error in delete operation." });
+                Result result = await _repository.DeleteAsync(id);
+                if (result.Success)
+                    return Ok(new { success = true });
+
+                return Ok(new { success = false, message = result.Message });
             }
             catch (Exception ex)
             {

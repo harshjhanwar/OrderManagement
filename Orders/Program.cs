@@ -1,8 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using OrderManagement.Models;
-using OrderManagement.Repositories;
+using OrderManagement.OrderManagement.Business;
+using OrderManagement.OrderManagement.DataAccess;
 
-namespace OrderMangement
+namespace OrderManagement
 {
     public class Program
     {
@@ -16,7 +17,9 @@ namespace OrderMangement
                     options => options.UseSqlServer(builder.Configuration.GetConnectionString("SQLServerConnectionString"))
                 );
 
-            builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+            //builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+            builder.Services.AddScoped<IOrderRepository, OrderSPRepository>();
+            builder.Services.AddScoped<IProductRepository, ProductsSPRepository>();
 
             var app = builder.Build();
 

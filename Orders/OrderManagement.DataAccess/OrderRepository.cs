@@ -2,11 +2,12 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using OrderManagement.Models;
+using OrderManagement.OrderManagement.Business;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace OrderManagement.Repositories
+namespace OrderManagement.OrderManagement.DataAccess
 {
     public class OrderRepository(AppDbContext context, ILogger<OrderRepository> logger) : IOrderRepository
     {
@@ -37,33 +38,42 @@ namespace OrderManagement.Repositories
             }
         }
 
-        public async Task AddAsync(Orders order)
+        public async Task<Result> AddAsync(Orders order)
         {
             try
             {
-                _context.Orders.Add(order);
-                await _context.SaveChangesAsync();
+                if(order.Id == 0)
+                {
+                    _context.Orders.Add(order);
+                    await _context.SaveChangesAsync();
+                }
+                else
+                {
+                    _context.Orders.Update(order);
+                    await _context.SaveChangesAsync();
+                }
+                return new Result(true);
             }
             catch
             {
-                throw;
+                return new Result(false, "An error occurred while inserting or updating the user. Please try again later.");
             }
         }
 
-        public async Task UpdateAsync(Orders order)
-        {
-            try
-            {
-                _context.Orders.Update(order);
-                await _context.SaveChangesAsync();
-            }
-            catch 
-            {
-                throw;
-            }
-        }
+        //public async Task UpdateAsync(Orders order)
+        //{
+        //    try
+        //    {
+        //        _context.Orders.Update(order);
+        //        await _context.SaveChangesAsync();
+        //    }
+        //    catch 
+        //    {
+        //        throw;
+        //    }
+        //}
 
-        public async Task<bool> DeleteAsync(int id)
+        public async Task<Result> DeleteAsync(int id)
         {
             try
             {
@@ -73,14 +83,19 @@ namespace OrderManagement.Repositories
                     var rowsAffectedParam = new SqlParameter("@RowsAffected", System.Data.SqlDbType.SmallInt) { Direction = System.Data.ParameterDirection.Output };
                     await _context.Database.ExecuteSqlInterpolatedAsync(
                         $"dbo.spDeleteOrder_Orders @id = {id}, @RowsAffected = {rowsAffectedParam} OUTPUT"
-                    );
-                    return (short)rowsAffectedParam.Value == 1;
+                    );                    
+                    short rowsAffected = (short)rowsAffectedParam.Value;
+
+                    if (rowsAffected == 1)
+                    {
+                        return new Result(true);
+                    }
                 }
-                return false;
+                return new Result(false, "An error occurred while inserting or updating the user. Please try again later.");
             }
             catch
             {
-                throw;
+                return new Result(false, "An error occurred while inserting or updating the user. Please try again later.");
             }
         }
     }
